@@ -1,0 +1,28 @@
+Package: Slab
+Type: Package
+Title: Slab and Shrinkage Generalised LASSO Estimators
+Version: 0.1.0
+Authors@R: c(
+    person("Hoi Chun", "Chen", email = "jessechen0228@outlook.com", role = c("aut", "cre")),
+    person("Vali", "Asimit", email = "asimit@city.ac.uk", role = "aut"),
+    person("Zhou", "Feng", email = "Feng.Zhou@city.ac.uk", role = "aut")
+    )
+Maintainer: Hoi Chun Chen <jessechen0228@outlook.com>
+Description: 
+    This package aim to provide better estimations that have lower mean square errors (MSE) than ordinary least square (OLS) when handling high dimension data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.1
+Imports: maotai, MASS, mnormt, glmnet, ggplot2
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: 
+    R (>= 2.10)
+Author: Hoi Chun Chen [aut, cre],
+  Vali Asimit [aut],
+  Feng Zhou [aut]
+VignetteBuilder: knitr

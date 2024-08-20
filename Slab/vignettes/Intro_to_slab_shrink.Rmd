@@ -1,0 +1,154 @@
+---
+title: "Introduction to Slab package"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to Slab package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# Ensure the package is installed from local source before building vignette
+if (!requireNamespace("Slab", quietly = TRUE)) {
+  devtools::install()
+  devtools::load_all(".")
+}
+library(Slab)
+library(ggplot2)
+```
+
+# Introduction
+This is the introduction to the Slab package
+This package aim to provide better estimators compared to ordinary least square (OLS) and ridge regression (RR). These estimations are inspired by Stein Paradox and the following code demonstrates how to use the `Slab` package for model estimation.
+
+# Data Generation
+```{r setup}
+# Install the development version from GitHub
+# devtools::install_github("")
+library(Slab)
+library(MASS)
+
+options(width = 80)
+# Function to create a correlation matrix for X
+create_corr_matrix <- function(rho, p) {
+  corr_matrix <- diag(1, p)
+  for (i in 2:p) {
+    for (j in 1:(i-1)) {
+      corr_matrix[i, j] <- rho^(abs(i - j))
+      corr_matrix[j, i] <- corr_matrix[i, j] # symmetric matrix
+    }
+  }
+  return(corr_matrix)
+}
+
+# Function to generate beta values with both positive and negative signs
+generate_beta <- function(p) {
+  half_p <- ceiling(p / 2)
+  beta <- rep(c(1, -1), length.out = p) * rep(1:half_p, each = 2)[1:p]
+  return(beta)
+}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Number of observations and variables
+n <- 100  # Number of observations
+p <-5  # Number of variables
+rho <- 0.5  
+
+corr_matrix <- create_corr_matrix(rho, p)
+x <- mvrnorm(n = n, mu = rep(0, p), Sigma = corr_matrix)
+beta <- generate_beta(p + 1)
+sigma_vec <- abs(rnorm(n = n, mean = 1, sd = sqrt(1)))
+y <- rnorm(n, mean = as.vector(cbind(1,x)%*%beta), sd = sigma_vec)
+```
+
+# Example of Estimations 
+Firstly, we run the most common estimation, which is OLS.
+
+```{r}
+result_ols <- lm(y ~ x)
+coef_ols <- as.numeric(result_ols$coefficients)
+print(coef_ols)
+```
+
+Then, now we run our estimations from `Slab` package.
+Run all estimations with just only x and y, which aim to find the best lambda from 10000 lambdas in the lambda range from 0 to 10^6.
+```{r}
+result_slab_shrink <- slab_shrink(x, y)
+coef_sr <- result_slab_shrink$SR
+coef_st <- result_slab_shrink$ST
+coef_dsh <- result_slab_shrink$DSH
+coef_sh <- result_slab_shrink$SH
+print(coef_sr)
+print(coef_st)
+print(coef_dsh)
+print(coef_sh)
+```
+
+Run all estimations with specific lambda 0, which is the improvement based on OLS.
+```{r}
+result_slab_shrink_lambda_0 <- slab_shrink(x, y, lambda = 0)
+coef_sr_lambda_0 <- result_slab_shrink_lambda_0$SR
+coef_st_lambda_0 <- result_slab_shrink_lambda_0$ST
+coef_dsh_lambda_0 <- result_slab_shrink_lambda_0$DSH
+coef_sh_lambda_0 <- result_slab_shrink_lambda_0$SH
+print(coef_sr_lambda_0)
+print(coef_st_lambda_0)
+print(coef_dsh_lambda_0)
+print(coef_sh_lambda_0)
+print(result_slab_shrink_lambda_0$lambda)
+```
+
+Run all estimations with specific lambda range, which aim to find the best lambda from specific lambda range.
+```{r}
+result_slab_shrink_lambda_range <- slab_shrink(x, y, lambda = runif(100, min = 0, max = 100))
+coef_sr_lambda_range <- result_slab_shrink_lambda_range$SR
+coef_st_lambda_range <- result_slab_shrink_lambda_range$ST
+coef_dsh_lambda_range <- result_slab_shrink_lambda_range$DSH
+coef_sh_lambda_range <- result_slab_shrink_lambda_range$SH
+print(coef_sr_lambda_range)
+print(coef_st_lambda_range)
+print(coef_dsh_lambda_range)
+print(coef_sh_lambda_range)
+print(result_slab_shrink_lambda_range$lambda)
+```
+
+Run all estimations with specific u value, which will use this u value for Slab Regression. Other estimation (ST, DSH, and SH) will not get affected whatever u value is entered.
+```{r}
+result_slab_shrink_u_2 <- slab_shrink(x, y, u = 2)
+coef_sr_u_2 <- result_slab_shrink_u_2$SR
+print(coef_sr_u_2)
+print(result_slab_shrink_u_2$lambda)
+```
+
+Run all estimations with specific u range, which will use this u range for Slab Regression. The length of the u range should be the same length as the p + 1, which is the total number of variables including the intercept. 
+```{r}
+result_slab_shrink_u_range <- slab_shrink(x, y, u = runif(6, min = 0, max = 100))
+coef_sr_u_range <- result_slab_shrink_u_range$SR
+print(coef_sr_u_range)
+print(result_slab_shrink_u_range$lambda)
+```
+
+Note: This output lambda might not be the same as the previous one, although both function did not enter specific lambda.
+
+# Plotting Estimations 
+Once we have our model ready, we are able to plot the model coefficients as graph. 
+```{r, fig.width=7, fig.height=5}
+options(width = 80)
+plot.model(result_slab_shrink)
+```
+
+Users can also display the specific coefficients can enter.
+```{r, fig.width=7, fig.height=5}
+options(width = 80)
+plot.model(result_slab_shrink, show_only = c(0, 1, 4, 5))
+```
+
+User can also check the lambda trend.
+```{r, fig.width=7, fig.height=5}
+options(width = 80)
+plot.cv_model(result_slab_shrink)
+```
+
+
